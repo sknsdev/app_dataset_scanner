@@ -314,26 +314,36 @@ class _CameraScreenState extends State<CameraScreen> {
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
+          Positioned.fill(
             child: CameraPreview(_controller!),
           ),
-          Container(
-            padding: const EdgeInsets.all(16),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+            color: Colors.transparent,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                ElevatedButton(
+                FloatingActionButton(
                   onPressed: () {
                     Navigator.popUntil(context, (route) => route.isFirst);
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Завершить'),
+                  backgroundColor: Colors.red,
+                  child: const Icon(Icons.close_sharp, color: Colors.white),
                 ),
+                // ElevatedButton(
+                //   onPressed: () {
+                //     Navigator.popUntil(context, (route) => route.isFirst);
+                //   },
+                //   style: ElevatedButton.styleFrom(
+                //     backgroundColor: Colors.red,
+                //     foregroundColor: Colors.white,
+                //   ),
+                //   child: const Text('Завершить'),
+                // ),
                 FloatingActionButton(
                   onPressed: _takePicture,
                   backgroundColor: Colors.blue,
@@ -342,8 +352,8 @@ class _CameraScreenState extends State<CameraScreen> {
               ],
             ),
           ),
-        ],
-      ),
+        ),
+      ]),
     );
   }
 
