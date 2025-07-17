@@ -180,6 +180,10 @@ class _CameraScreenState extends State<CameraScreen> {
   bool _isInitialized = false;
   int _photoCount = 1;
   String? _datasetPath;
+  FlashMode _flashMode = FlashMode.off;
+  double _currentExposure = 0.0;
+  double _minExposure = 0.0;
+  double _maxExposure = 0.0;
 
   @override
   void initState() {
@@ -194,10 +198,15 @@ class _CameraScreenState extends State<CameraScreen> {
     _controller = CameraController(
       cameras[0],
       ResolutionPreset.high,
+      enableAudio: false,
+      imageFormatGroup: ImageFormatGroup.jpeg,
     );
     
     try {
       await _controller!.initialize();
+      await _controller!.setFlashMode(_flashMode);
+      _minExposure = await _controller!.getMinExposureOffset();
+      _maxExposure = await _controller!.getMaxExposureOffset();
       setState(() {
         _isInitialized = true;
       });
@@ -320,9 +329,20 @@ class _CameraScreenState extends State<CameraScreen> {
             child: CameraPreview(_controller!),
           ),
           Align(
+            alignment: Alignment.topRight,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: FloatingActionButton(
+                onPressed: _showSettingsDialog,
+                backgroundColor: Colors.black.withOpacity(0.5),
+                child: const Icon(Icons.settings, color: Colors.white),
+              ),
+            ),
+          ),
+          Align(
             alignment: Alignment.bottomCenter,
             child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 72),
             color: Colors.transparent,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -354,6 +374,79 @@ class _CameraScreenState extends State<CameraScreen> {
           ),
         ),
       ]),
+    );
+  }
+
+  void _showSettingsDialog() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Container(
+              padding: const EdgeInsets.all(16.0),
+              child: Wrap(
+                children: <Widget>[
+                  const ListTile(
+                    title: Text('Настройки камеры', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                  // Flash settings
+                  ListTile(
+                    leading: const Icon(Icons.flash_on),
+                    title: const Text('Вспышка'),
+                    trailing: DropdownButton<FlashMode>(
+                      value: _flashMode,
+                      onChanged: (FlashMode? newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            _flashMode = newValue;
+                          });
+                          _controller!.setFlashMode(newValue);
+                        }
+                      },
+                      items: const [
+                        DropdownMenuItem(
+                          value: FlashMode.off,
+                          child: Text('Выкл'),
+                        ),
+                        DropdownMenuItem(
+                          value: FlashMode.auto,
+                          child: Text('Авто'),
+                        ),
+                        DropdownMenuItem(
+                          value: FlashMode.always,
+                          child: Text('Вкл'),
+                        ),
+                        DropdownMenuItem(
+                          value: FlashMode.torch,
+                          child: Text('Фонарик'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Exposure settings
+                  ListTile(
+                    leading: const Icon(Icons.exposure),
+                    title: Text('Экспозиция (${_currentExposure.toStringAsFixed(1)})'),
+                  ),
+                  if (_minExposure != 0.0 || _maxExposure != 0.0)
+                  Slider(
+                    value: _currentExposure,
+                    min: _minExposure,
+                    max: _maxExposure,
+                    onChanged: (double value) {
+                      setState(() {
+                        _currentExposure = value;
+                      });
+                      _controller!.setExposureOffset(value);
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
