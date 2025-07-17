@@ -4,6 +4,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
+import 'package:vibration/vibration.dart';
 
 List<CameraDescription> cameras = [];
 
@@ -209,6 +210,7 @@ class _CameraScreenState extends State<CameraScreen> {
     try {
       // Запрос разрешений
       await Permission.camera.request();
+      await Permission.storage.request();
 
       // Получение пути к внешнему хранилищу (Pictures)
       Directory? directory;
@@ -258,6 +260,7 @@ class _CameraScreenState extends State<CameraScreen> {
 
   Future<void> _takePicture() async {
     print('ФОТОГРАФИРУЕМ');
+          Vibration.vibrate(duration: 20);
     if (_controller == null || !_controller!.value.isInitialized || _datasetPath == null) {
       return;
     }
@@ -267,18 +270,14 @@ class _CameraScreenState extends State<CameraScreen> {
       final filePath = path.join(_datasetPath!, fileName);
       
       final XFile picture = await _controller!.takePicture();
-      await picture.saveTo(filePath);
+      final bytes = await picture.readAsBytes();
+      await File(filePath).writeAsBytes(bytes);
       
       setState(() {
         _photoCount++;
       });
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Фото сохранено: $fileName'),
-          duration: const Duration(seconds: 1),
-        ),
-      );
+
     } catch (e) {
       print('Ошибка сохранения фото: $e');
       ScaffoldMessenger.of(context).showSnackBar(
