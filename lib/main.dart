@@ -208,50 +208,47 @@ class _CameraScreenState extends State<CameraScreen> {
   Future<void> _createDatasetDirectory() async {
     try {
       // Запрос разрешений
-      await Permission.storage.request();
       await Permission.camera.request();
-      await Permission.manageExternalStorage.request();
-      
+
       // Получение пути к внешнему хранилищу (Pictures)
       Directory? directory;
-      
+
       try {
         // Пытаемся получить папку Pictures
-        final List<Directory>? externalDirs = await getExternalStorageDirectories(type: StorageDirectory.pictures);
+        final List<Directory>? externalDirs =
+            await getExternalStorageDirectories(type: StorageDirectory.pictures);
         if (externalDirs != null && externalDirs.isNotEmpty) {
           directory = externalDirs.first;
+        } else {
+          // Если не удалось, используем основное хранилище приложения
+          directory = await getExternalStorageDirectory();
         }
       } catch (e) {
-        print('Ошибка получения Pictures директории: $e');
-      }
-      
-      // Если не удалось получить Pictures, используем основное внешнее хранилище
-      if (directory == null) {
+        print('Ошибка получения директории: $e');
         directory = await getExternalStorageDirectory();
-        if (directory == null) {
-          throw Exception('Не удалось получить доступ к внешнему хранилищу');
-        }
-        // Создаем путь к Pictures вручную
-        final storagePath = directory.path.split('/Android').first;
-        directory = Directory(path.join(storagePath, 'Pictures'));
       }
-      
+
+      if (directory == null) {
+        print('Не удалось получить доступ к хранилищу');
+        return;
+      }
+
       final datasetDir = Directory(path.join(directory.path, 'BERSERKDATASET'));
-      
+
       if (!await datasetDir.exists()) {
         await datasetDir.create(recursive: true);
       }
-      
+
       final categoryDir = Directory(path.join(datasetDir.path, widget.category));
       if (!await categoryDir.exists()) {
         await categoryDir.create(recursive: true);
       }
-      
+
       final numberDir = Directory(path.join(categoryDir.path, widget.number));
       if (!await numberDir.exists()) {
         await numberDir.create(recursive: true);
       }
-      
+
       _datasetPath = numberDir.path;
       print('Путь сохранения: $_datasetPath');
     } catch (e) {
